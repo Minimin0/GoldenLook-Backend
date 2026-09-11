@@ -1,0 +1,2 @@
+# Runtime target: Python 3.12 on Modal.
+# Heavy ML dependencies are intentionally not installed during repository bootstrap.
