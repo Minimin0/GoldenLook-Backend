@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { appearanceSchema, createCaseSchema } from "@/lib/contracts";
+import { appearanceSchema, createCaseSchema, publicContactSchema } from "@/lib/contracts";
 
 describe("v4 schemas", () => {
   it("accepts body_visible", () => {
@@ -36,5 +36,15 @@ describe("v4 schemas", () => {
   it("keeps unknown distinct from none", () => {
     const appearance = appearanceSchema.parse({ top: { status: "unknown" }, bottom: { status: "unknown" }, hat: { status: "none" }, shoes: { status: "unknown" }, items: [] });
     expect(appearance.hat.status).toBe("none");
+  });
+
+  it("accepts international phone formatting and rejects text", () => {
+    expect(publicContactSchema.parse("+82 10-1234-5678")).toBe("+82 10-1234-5678");
+    expect(() => publicContactSchema.parse("abcdefghi")).toThrow();
+  });
+
+  it("keeps age within the database contract", () => {
+    expect(() => createCaseSchema.parse({ photoMode: "face_only", age: 0 })).toThrow();
+    expect(createCaseSchema.parse({ photoMode: "face_only", age: 1 }).age).toBe(1);
   });
 });

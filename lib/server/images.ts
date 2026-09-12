@@ -1,4 +1,5 @@
 import "server-only";
+import sharp from "sharp";
 import { ALLOWED_IMAGE_TYPES, MAX_PHOTO_BYTES } from "@/lib/contracts";
 import { ApiError } from "@/lib/server/http";
 
@@ -6,9 +7,20 @@ export async function readImageFile(file: File) {
   if (!file.size || file.size > MAX_PHOTO_BYTES || !ALLOWED_IMAGE_TYPES.includes(file.type as never)) {
     throw new ApiError("INVALID_INPUT");
   }
-  const bytes = new Uint8Array(await file.arrayBuffer());
-  validateImage(bytes, file.type);
-  return bytes;
+  return sanitizeImage(new Uint8Array(await file.arrayBuffer()), file.type);
+}
+
+export async function sanitizeImage(bytes: Uint8Array, mimeType: string) {
+  validateImage(bytes, mimeType);
+  try {
+    const format = mimeType === "image/png" ? "png" : mimeType === "image/webp" ? "webp" : "jpeg";
+    const sanitized = new Uint8Array(await sharp(bytes).rotate().toFormat(format).toBuffer());
+    validateImage(sanitized, mimeType);
+    return sanitized;
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    throw new ApiError("INVALID_INPUT");
+  }
 }
 
 export function validateImage(bytes: Uint8Array, mimeType: string) {
@@ -24,10 +36,10 @@ export function validateImage(bytes: Uint8Array, mimeType: string) {
 
 function imageSize(bytes: Uint8Array, mimeType: string) {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  if (mimeType === "image/png" && bytes[0] === 0x89 && bytes[1] === 0x50) {
+  if (mimeType === "image/png" && bytes.length >= 24 && [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a].every((value, index) => bytes[index] === value)) {
     return { width: view.getUint32(16), height: view.getUint32(20) };
   }
-  if (mimeType === "image/jpeg" && bytes[0] === 0xff && bytes[1] === 0xd8) {
+  if (mimeType === "image/jpeg" && bytes.length >= 11 && bytes[0] === 0xff && bytes[1] === 0xd8) {
     for (let i = 2; i + 9 < bytes.length; ) {
       if (bytes[i] !== 0xff) break;
       const marker = bytes[i + 1];
@@ -36,7 +48,7 @@ function imageSize(bytes: Uint8Array, mimeType: string) {
       i += 2 + length;
     }
   }
-  if (mimeType === "image/webp" && text(bytes, 0, 4) === "RIFF" && text(bytes, 8, 12) === "WEBP") {
+  if (mimeType === "image/webp" && bytes.length >= 30 && text(bytes, 0, 4) === "RIFF" && text(bytes, 8, 12) === "WEBP") {
     if (text(bytes, 12, 16) === "VP8X") return { width: le24(bytes, 24) + 1, height: le24(bytes, 27) + 1 };
     if (text(bytes, 12, 16) === "VP8 ") return { width: view.getUint16(26, true) & 0x3fff, height: view.getUint16(28, true) & 0x3fff };
     if (text(bytes, 12, 16) === "VP8L") {

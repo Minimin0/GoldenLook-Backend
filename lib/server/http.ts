@@ -5,6 +5,7 @@ export type ErrorCode =
   | "NOT_FOUND"
   | "INVALID_INPUT"
   | "GENERATION_LIMIT"
+  | "DAILY_GENERATION_LIMIT"
   | "GENERATION_IN_PROGRESS"
   | "CASE_PUBLISHED"
   | "AI_TEMPORARY_ERROR"
@@ -17,6 +18,7 @@ const messages: Record<ErrorCode, string> = {
   NOT_FOUND: "요청한 항목을 찾을 수 없습니다.",
   INVALID_INPUT: "입력값을 확인해주세요.",
   GENERATION_LIMIT: "재생성 가능 횟수를 모두 사용했습니다.",
+  DAILY_GENERATION_LIMIT: "오늘 생성 가능 횟수를 모두 사용했습니다.",
   GENERATION_IN_PROGRESS: "이미지 생성이 진행 중입니다.",
   CASE_PUBLISHED: "발행된 전단은 삭제 외 변경할 수 없습니다.",
   AI_TEMPORARY_ERROR: "잠시 후 다시 시도해주세요.",
@@ -46,7 +48,7 @@ export function fail(error: unknown, req?: Request) {
   if (error instanceof ApiError) {
     return withCors(req, Response.json({ error: error.message, code: error.code }, { status: error.status }));
   }
-  console.error({ at: "api_error", error: error instanceof Error ? error.message : String(error) });
+  console.error({ at: "api_error", code: errorCode(error) });
   return withCors(req, Response.json({ error: messages.INTERNAL, code: "INTERNAL" }, { status: 500 }));
 }
 
@@ -62,18 +64,23 @@ export function preflight(req: Request, methods: string) {
 
 export function withCors(req: Request | undefined, res: Response, methods = "GET,POST,PATCH,DELETE,OPTIONS") {
   if (!req) return res;
+  if (!res.headers.has("Cache-Control")) res.headers.set("Cache-Control", "private, no-store");
   const origin = req.headers.get("origin");
+  if (origin) res.headers.set("Vary", "Origin");
   if (origin && allowedOrigins().includes(origin)) {
     res.headers.set("Access-Control-Allow-Origin", origin);
-    res.headers.set("Vary", "Origin");
     res.headers.set("Access-Control-Allow-Methods", methods);
     res.headers.set("Access-Control-Allow-Headers", "Authorization, Content-Type");
   }
   return res;
 }
 
+function errorCode(error: unknown) {
+  return typeof error === "object" && error && "code" in error ? String(error.code) : error instanceof Error ? error.name : typeof error;
+}
+
 function allowedOrigins() {
-  return (process.env.CORS_ALLOWED_ORIGINS || "http://localhost:3000")
+  return (process.env.CORS_ALLOWED_ORIGINS || (process.env.NODE_ENV === "development" ? "http://localhost:3000" : ""))
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean);

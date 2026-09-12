@@ -12,6 +12,7 @@ const base = {
   generated_path: "u/c/generated.jpg",
   generation_status: "GENERATED" as const,
   generation_started_at: null,
+  generation_attempt_id: null,
   regeneration_count: 0,
   name: "홍길동",
   age: 70,
@@ -22,6 +23,8 @@ const base = {
   notes: null,
   contact_disclosure_consent: true,
   published_at: null,
+  created_at: "2026-09-12T00:00:00Z",
+  updated_at: "2026-09-12T00:00:00Z",
 };
 
 describe("publish validation", () => {

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildImagePrompt } from "@/lib/server/ai/prompt";
 
 const appearance = {
-  top: { status: "known" as const, color: "blue" as const },
+  top: { status: "known" as const, color: "blue" as const, type: "short-sleeve shirt" },
   bottom: { status: "unknown" as const },
   hat: { status: "none" as const },
   shoes: { status: "unknown" as const },
@@ -14,6 +14,8 @@ describe("image prompt", () => {
     const prompt = buildImagePrompt({ photoMode: "body_visible", appearance, bodyProfile: null, age: null, heightCm: null });
     expect(prompt).toContain("Edit the supplied original photo");
     expect(prompt).toContain("Preserve the background");
+    expect(prompt).toContain("Preserve the person's face and identity");
+    expect(prompt).toContain("short-sleeve shirt");
     expect(prompt).toContain("photorealistic");
     expect(prompt).toContain("No cartoon");
   });

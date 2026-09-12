@@ -38,26 +38,33 @@ export async function PATCH(req: Request, ctx: CaseContext) {
       body = await req.json();
     }
 
-    const patch = dbPatch(patchCaseSchema.parse(body));
+    const patch = dbPatch(patchCaseSchema.parse(body), existing.photo_mode);
     const db = supabaseAdmin();
     if (photo) {
       const bytes = await readImageFile(photo);
       const path = originalPath(user.id, id, photo.type);
       const upload = await db.storage.from("case-images").upload(path, bytes, { contentType: photo.type, upsert: true });
-      if (upload.error) throw upload.error;
+      if (upload.error) throw new ApiError("UPLOAD_FAILED", 500);
       patch.original_path = path;
       patch.generated_path = null;
       patch.generation_status = "PENDING";
+      patch.generation_started_at = null;
+      patch.generation_attempt_id = null;
       patch.regeneration_count = 0;
     }
 
-    const { data, error } = await db.from("cases").update(patch).eq("id", id).eq("user_id", user.id).select("*").single();
+    const { data, error } = await db.from("cases").update(patch).eq("id", id).eq("user_id", user.id).is("published_at", null).neq("generation_status", "GENERATING").select("*").maybeSingle();
     if (error || !data) {
-      if (photo && typeof patch.original_path === "string") await removeStoragePaths([patch.original_path]);
-      throw error;
+      if (photo && typeof patch.original_path === "string") {
+        try {
+          await removeStoragePaths([patch.original_path], true);
+        } catch {}
+      }
+      if (!error) requireMutable(await getOwnedCase(user, id));
+      throw error ?? new ApiError("INTERNAL", 500);
     }
-    if (photo) {
-      const stale = [existing.original_path, existing.generated_path].filter(Boolean) as string[];
+    const stale = [photo ? existing.original_path : null, patch.generated_path === null ? existing.generated_path : null].filter(Boolean) as string[];
+    if (stale.length) {
       try {
         await removeStoragePaths(stale);
       } catch {
@@ -85,8 +92,8 @@ export async function DELETE(req: Request, ctx: CaseContext) {
     const user = await requireUser(req);
     const row = await getOwnedCase(user, id);
     await removeCaseFiles(row);
-    const deleted = await supabaseAdmin().from("cases").delete().eq("id", id).eq("user_id", user.id);
-    if (deleted.error) throw deleted.error;
+    const deleted = await supabaseAdmin().from("cases").delete().eq("id", id).eq("user_id", user.id).select("id").single();
+    if (deleted.error || !deleted.data) throw deleted.error ?? new ApiError("INTERNAL", 500);
     return withCors(req, new Response(null, { status: 204 }));
   } catch (error) {
     return fail(error, req);

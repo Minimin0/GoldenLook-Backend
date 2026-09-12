@@ -21,15 +21,17 @@ export async function POST(req: Request) {
         deleted++;
       } catch (error) {
         failed++;
-        console.error({ at: "cleanup_failed", caseId: row.id, error: error instanceof Error ? error.message : String(error) });
+        console.error({ at: "cleanup_failed", caseId: row.id, code: typeof error === "object" && error && "code" in error ? String(error.code) : "unknown" });
       }
     }
     const retry = await db.from("storage_deletion_failures").select("id,bucket,path").limit(50);
     if (retry.error) throw retry.error;
     for (const item of retry.data ?? []) {
       try {
-        await removeStoragePaths([item.path]);
-        await db.from("storage_deletion_failures").delete().eq("id", item.id);
+        const removal = await db.storage.from(item.bucket).remove([item.path]);
+        if (removal.error) throw removal.error;
+        const removalRecord = await db.from("storage_deletion_failures").delete().eq("id", item.id);
+        if (removalRecord.error) throw removalRecord.error;
       } catch {
         failed++;
       }

@@ -70,7 +70,7 @@ export const createCaseSchema = z.object({
   photoMode: photoModeSchema,
   appearance: appearanceSchema.optional(),
   bodyProfile: bodyProfileSchema.optional(),
-  age: z.coerce.number().int().min(0).max(120).optional().nullable(),
+  age: z.coerce.number().int().min(1).max(120).optional().nullable(),
   heightCm: z.coerce.number().int().min(40).max(230).optional().nullable(),
 });
 
@@ -79,7 +79,7 @@ export const patchCaseSchema = z
     photoMode: photoModeSchema,
     appearance: appearanceSchema,
     bodyProfile: bodyProfileSchema,
-    age: z.coerce.number().int().min(0).max(120).nullable(),
+    age: z.coerce.number().int().min(1).max(120).nullable(),
     heightCm: z.coerce.number().int().min(40).max(230).nullable(),
     name: z.string().trim().min(1).max(80).nullable(),
     missingAt: z.string().trim().min(1).max(80).nullable(),
