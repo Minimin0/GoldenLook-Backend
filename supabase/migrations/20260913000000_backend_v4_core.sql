@@ -62,7 +62,7 @@ create or replace function public.finish_case_generation(
 returns table(generation_status text, regeneration_count integer)
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, pg_temp
 as $$
 declare
   current_case public.cases%rowtype;
@@ -94,3 +94,6 @@ begin
   return next;
 end;
 $$;
+
+revoke all on function public.finish_case_generation(uuid, uuid, text) from public, anon, authenticated;
+grant execute on function public.finish_case_generation(uuid, uuid, text) to service_role;

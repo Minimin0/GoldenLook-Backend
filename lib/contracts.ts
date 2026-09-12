@@ -6,6 +6,7 @@ export const MAX_REGENERATIONS = 3;
 export const CASE_BUCKET = "case-images";
 export const MAX_PHOTO_BYTES = 4 * 1024 * 1024;
 export const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
+export const DEFAULT_AI_GENERATION_DAILY_LIMIT = 10;
 
 export const colorIds = colors.map((color) => color.id) as [string, ...string[]];
 export const colorSchema = z.enum(colorIds);
@@ -20,7 +21,7 @@ const nullableText = z
 const garmentSchema = z.discriminatedUnion("status", [
   z.object({
     status: z.literal("known"),
-    color: colorSchema.optional().nullable(),
+    color: colorSchema,
     type: nullableText,
     brand: nullableText,
   }),
@@ -46,11 +47,24 @@ export const appearanceSchema = z.object({
 
 export const bodyProfileSchema = z
   .object({
-    gender: z.enum(["male", "female"]).optional().nullable(),
-    bodyType: z.enum(["slim", "average", "heavy"]).optional().nullable(),
+    gender: z.enum(["male", "female"]).nullable().optional(),
+    bodyType: z.enum(["slim", "average", "heavy"]).nullable().optional(),
   })
   .partial()
   .nullable();
+
+const contactSchema = z
+  .string()
+  .trim()
+  .max(40)
+  .nullable()
+  .refine((value) => {
+    if (value == null) return true;
+    if (!/^\+?[0-9 ()-]+$/.test(value)) return false;
+    const digits = value.replace(/\D/g, "");
+    return digits.length >= 7 && digits.length <= 15;
+  });
+export const publicContactSchema = contactSchema.refine((value) => value != null);
 
 export const createCaseSchema = z.object({
   photoMode: photoModeSchema,
@@ -70,7 +84,7 @@ export const patchCaseSchema = z
     name: z.string().trim().min(1).max(80).nullable(),
     missingAt: z.string().trim().min(1).max(80).nullable(),
     place: z.string().trim().min(1).max(160).nullable(),
-    contact: z.string().trim().min(7).max(40).nullable(),
+    contact: contactSchema,
     notes: z.string().trim().max(500).nullable(),
     contactDisclosureConsent: z.boolean(),
   })
@@ -95,4 +109,8 @@ export function colorName(id: string | null | undefined) {
 
 export function regenerationsRemaining(regenerationCount: number) {
   return Math.max(0, MAX_REGENERATIONS - regenerationCount);
+}
+
+export function isValidContact(value: string | null) {
+  return publicContactSchema.safeParse(value).success;
 }

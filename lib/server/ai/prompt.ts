@@ -1,10 +1,9 @@
-import { AI_RESULT_LABEL, Appearance, BodyProfile, colorName } from "@/lib/contracts";
+import { Appearance, BodyProfile, colorName } from "@/lib/contracts";
 import { GenerateImageInput } from "@/lib/server/ai/types";
 
 export function buildImagePrompt(input: Omit<GenerateImageInput, "originalImage" | "originalMimeType">) {
   const clothing = clothingLines(input.appearance).join("\n") || "No confirmed clothing details.";
   const base = [
-    `Add visible Korean label text on the result image: ${AI_RESULT_LABEL}.`,
     "Use photorealistic style only. No cartoon, no illustration, no stylization.",
     "Do not invent logos, brands, patterns, or facts that the user marked unknown.",
     "Do not include the person's name, contact, last-seen place, or other flyer PII.",

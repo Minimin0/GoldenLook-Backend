@@ -3,8 +3,15 @@
 @caseId = paste_case_uuid
 @shareId = paste_share_id
 
+### Preflight -> 204
+OPTIONS {{baseUrl}}/api/cases
+Origin: http://localhost:3000
+Access-Control-Request-Method: POST
+Access-Control-Request-Headers: Authorization, Content-Type
+
 ### Unauthorized create -> 401
 POST {{baseUrl}}/api/cases
+Origin: http://localhost:3000
 
 ### Create case -> 201
 POST {{baseUrl}}/api/cases

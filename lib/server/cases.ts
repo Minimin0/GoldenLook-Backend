@@ -6,7 +6,9 @@ import {
   Appearance,
   CASE_BUCKET,
   CasePatch,
+  DEFAULT_AI_GENERATION_DAILY_LIMIT,
   defaultAppearance,
+  isValidContact,
   regenerationsRemaining,
 } from "@/lib/contracts";
 import { ApiError } from "@/lib/server/http";
@@ -22,6 +24,7 @@ export type CaseRow = {
   original_path: string | null;
   generated_path: string | null;
   generation_status: "PENDING" | "GENERATING" | "GENERATED" | "TEMPORARY_ERROR";
+  generation_started_at: string | null;
   regeneration_count: number;
   name: string | null;
   age: number | null;
@@ -35,11 +38,11 @@ export type CaseRow = {
 };
 
 export function originalPath(userId: string, caseId: string, mime: string) {
-  return `${userId}/${caseId}/original.${ext(mime)}`;
+  return `${userId}/${caseId}/original/${crypto.randomUUID()}.${ext(mime)}`;
 }
 
 export function generatedPath(userId: string, caseId: string, mime: string) {
-  return `${userId}/${caseId}/generated.${ext(mime)}`;
+  return `${userId}/${caseId}/generated/${crypto.randomUUID()}.${ext(mime)}`;
 }
 
 export async function getOwnedCase(user: User, id: string) {
@@ -99,14 +102,14 @@ export function dbPatch(input: CasePatch) {
   return out;
 }
 
-export async function removeCaseFiles(row: Pick<CaseRow, "original_path" | "generated_path">) {
+export async function removeCaseFiles(row: Pick<CaseRow, "original_path" | "generated_path">, queueOnFailure = false) {
   const paths = [row.original_path, row.generated_path].filter(Boolean) as string[];
-  if (paths.length) await supabaseAdmin().storage.from(CASE_BUCKET).remove(paths);
+  await removeStoragePaths(paths, queueOnFailure);
 }
 
 export function requirePublishable(row: CaseRow) {
   if (row.generation_status !== "GENERATED" || !row.generated_path) throw new ApiError("INVALID_INPUT");
-  if (!row.name || !row.age || !row.missing_at || !row.place || !row.contact) throw new ApiError("INVALID_INPUT");
+  if (!row.name || !row.age || !row.missing_at || !row.place || !isValidContact(row.contact)) throw new ApiError("INVALID_INPUT");
   if (!row.contact_disclosure_consent) throw new ApiError("INVALID_INPUT");
 }
 
@@ -117,6 +120,46 @@ export async function randomShareId() {
     if (!data) return shareId;
   }
   throw new ApiError("INTERNAL", 500);
+}
+
+export function requireMutable(row: CaseRow) {
+  if (row.published_at) throw new ApiError("CASE_PUBLISHED", 409);
+}
+
+export function requireGenerationInput(row: CaseRow) {
+  requireMutable(row);
+  if (!row.original_path) throw new ApiError("INVALID_INPUT");
+  if (row.photo_mode !== "face_only") return;
+  const body = row.body_profile ?? {};
+  if (!row.age || !row.height_cm || !body.gender || !body.bodyType) throw new ApiError("INVALID_INPUT");
+}
+
+export async function removeStoragePaths(paths: string[], queueOnFailure = false) {
+  if (!paths.length) return;
+  const { error } = await supabaseAdmin().storage.from(CASE_BUCKET).remove(paths);
+  if (!error) return;
+  if (queueOnFailure) await queueStorageDeletion(paths);
+  throw new ApiError("INTERNAL", 500);
+}
+
+export async function queueStorageDeletion(paths: string[]) {
+  if (!paths.length) return;
+  await supabaseAdmin().from("storage_deletion_failures").insert(paths.map((path) => ({ bucket: CASE_BUCKET, path })));
+}
+
+export function dailyGenerationLimit() {
+  const value = Number(process.env.AI_GENERATION_DAILY_LIMIT || DEFAULT_AI_GENERATION_DAILY_LIMIT);
+  return Number.isInteger(value) && value > 0 ? value : DEFAULT_AI_GENERATION_DAILY_LIMIT;
+}
+
+export function mapRpcError(message = "") {
+  if (message.includes("generation_in_progress")) return new ApiError("GENERATION_IN_PROGRESS", 409);
+  if (message.includes("generation_limit")) return new ApiError("GENERATION_LIMIT", 409);
+  if (message.includes("case_published")) return new ApiError("CASE_PUBLISHED", 409);
+  if (message.includes("daily_generation_limit")) return new ApiError("GENERATION_LIMIT", 429, "오늘 생성 가능 횟수를 모두 사용했습니다.");
+  if (message.includes("case_not_found")) return new ApiError("NOT_FOUND", 404);
+  if (message.includes("invalid_generation_state")) return new ApiError("INTERNAL", 500);
+  return new ApiError("INTERNAL", 500);
 }
 
 function ext(mime: string) {

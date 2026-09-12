@@ -1,7 +1,7 @@
 import { patchCaseSchema } from "@/lib/contracts";
 import { requireUser } from "@/lib/server/auth";
-import { caseDto, dbPatch, getOwnedCase, originalPath, removeCaseFiles } from "@/lib/server/cases";
-import { ApiError, assertUuid, fail, ok } from "@/lib/server/http";
+import { caseDto, dbPatch, getOwnedCase, originalPath, queueStorageDeletion, removeCaseFiles, removeStoragePaths, requireMutable } from "@/lib/server/cases";
+import { ApiError, assertUuid, fail, ok, preflight, withCors } from "@/lib/server/http";
 import { readImageFile } from "@/lib/server/images";
 import { supabaseAdmin } from "@/lib/server/supabase";
 
@@ -12,9 +12,9 @@ export async function GET(_req: Request, ctx: CaseContext) {
     const { id } = await ctx.params;
     assertUuid(id);
     const user = await requireUser(_req);
-    return ok(await caseDto(await getOwnedCase(user, id)));
+    return ok(await caseDto(await getOwnedCase(user, id)), undefined, _req);
   } catch (error) {
-    return fail(error);
+    return fail(error, _req);
   }
 }
 
@@ -24,6 +24,7 @@ export async function PATCH(req: Request, ctx: CaseContext) {
     assertUuid(id);
     const user = await requireUser(req);
     const existing = await getOwnedCase(user, id);
+    requireMutable(existing);
     const contentType = req.headers.get("content-type") ?? "";
     let photo: File | null = null;
     let body: unknown;
@@ -48,14 +49,24 @@ export async function PATCH(req: Request, ctx: CaseContext) {
       patch.generated_path = null;
       patch.generation_status = "PENDING";
       patch.regeneration_count = 0;
-      if (existing.original_path && existing.original_path !== path) await db.storage.from("case-images").remove([existing.original_path]);
     }
 
     const { data, error } = await db.from("cases").update(patch).eq("id", id).eq("user_id", user.id).select("*").single();
-    if (error || !data) throw error;
-    return ok(await caseDto(data));
+    if (error || !data) {
+      if (photo && typeof patch.original_path === "string") await removeStoragePaths([patch.original_path]);
+      throw error;
+    }
+    if (photo) {
+      const stale = [existing.original_path, existing.generated_path].filter(Boolean) as string[];
+      try {
+        await removeStoragePaths(stale);
+      } catch {
+        await queueStorageDeletion(stale);
+      }
+    }
+    return ok(await caseDto(data), undefined, req);
   } catch (error) {
-    return fail(error);
+    return fail(error, req);
   }
 }
 
@@ -74,9 +85,14 @@ export async function DELETE(req: Request, ctx: CaseContext) {
     const user = await requireUser(req);
     const row = await getOwnedCase(user, id);
     await removeCaseFiles(row);
-    await supabaseAdmin().from("cases").delete().eq("id", id).eq("user_id", user.id);
-    return new Response(null, { status: 204 });
+    const deleted = await supabaseAdmin().from("cases").delete().eq("id", id).eq("user_id", user.id);
+    if (deleted.error) throw deleted.error;
+    return withCors(req, new Response(null, { status: 204 }));
   } catch (error) {
-    return fail(error);
+    return fail(error, req);
   }
+}
+
+export function OPTIONS(req: Request) {
+  return preflight(req, "GET,PATCH,DELETE,OPTIONS");
 }

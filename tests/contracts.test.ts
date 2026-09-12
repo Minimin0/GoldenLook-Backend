@@ -27,6 +27,12 @@ describe("v4 schemas", () => {
     ).toThrow();
   });
 
+  it("rejects known garments without a color", () => {
+    expect(() =>
+      appearanceSchema.parse({ top: { status: "known" }, bottom: { status: "unknown" }, hat: { status: "unknown" }, shoes: { status: "unknown" }, items: [] }),
+    ).toThrow();
+  });
+
   it("keeps unknown distinct from none", () => {
     const appearance = appearanceSchema.parse({ top: { status: "unknown" }, bottom: { status: "unknown" }, hat: { status: "none" }, shoes: { status: "unknown" }, items: [] });
     expect(appearance.hat.status).toBe("none");

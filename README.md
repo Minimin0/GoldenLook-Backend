@@ -17,8 +17,10 @@ Required runtime env names:
 ```text
 SUPABASE_URL
 SUPABASE_SERVICE_ROLE_KEY
+CORS_ALLOWED_ORIGINS
 GEMINI_API_KEY
 GEMINI_IMAGE_MODEL
+AI_GENERATION_DAILY_LIMIT
 NEXT_PUBLIC_BASE_URL
 CRON_SECRET
 ```
@@ -34,7 +36,9 @@ It creates:
 - private `case-images` bucket
 - `public.cases`
 - owner RLS policies
-- `finish_case_generation(...)` RPC for server-side regeneration counting
+- `begin_case_generation(...)`, `finish_case_generation(...)`, and `abort_case_generation(...)` RPCs for generation reservation, finalization, and recovery
+- `ai_generation_usage` for per-user daily generation cost guard
+- `storage_deletion_failures` for retrying old private file deletion
 
 Storage paths:
 
@@ -45,9 +49,12 @@ Storage paths:
 
 Private API responses return 5-minute signed URLs, not raw storage paths.
 
+Cleanup runs daily on Vercel and deletes cases older than 24 hours. That keeps actual retention inside the v4 maximum 48-hour deletion policy even on conservative cron scheduling.
+
 ## API
 
 Private routes use `Authorization: Bearer <Supabase access token>`.
+CORS allows only origins listed in `CORS_ALLOWED_ORIGINS`; preflight does not require auth.
 
 ```text
 POST   /api/cases                 multipart: photo, photoMode, optional data JSON
@@ -72,9 +79,12 @@ Error DTO:
 - `photoMode`: `body_visible | face_only`
 - clothing statuses: `known | none | unknown`
 - colors: only IDs in `contracts/colors.json`
+- `known` garments require a color
+- `face_only` generation requires age, heightCm, gender, and bodyType before calling AI
 - generated result label: `AI로 재현한 예상 모습`
 - regeneration: initial generation plus max 3 successful regenerations
 - publish requires generated image, missing-person basics, contact, and full-contact disclosure consent
+- published cases cannot be patched or regenerated; delete remains allowed
 
 Removed from runtime: `/parse`, old `/edit`, Gemini text parsing, Modal/SegFormer/LAB mandatory path, `112/182`, `manageToken`.
 
@@ -86,7 +96,7 @@ Removed from runtime: `/parse`, old `/edit`, Gemini text parsing, Modal/SegForme
 - `prompt.ts`: pure prompt builder
 - `adapter.ts`: current Gemini implementation using `@google/genai`
 
-AI owners may change provider/model/prompt/pipeline as long as the app-facing contract still returns a successful image or a temporary provider failure.
+AI owners may change provider/model/prompt/pipeline as long as the app-facing contract still returns a successful image or a temporary provider failure. The Gemini prompt does not rely on model-rendered Korean safety text; Backend/Frontend DTOs and the public flyer render the deterministic `AI로 재현한 예상 모습` label.
 
 Live Gemini calls are not run by tests. Exercise `/api/cases/[id]/generate` manually only with `GEMINI_API_KEY` set and synthetic images.
 

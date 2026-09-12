@@ -1,7 +1,7 @@
 import { createElement as h } from "react";
 import { ImageResponse } from "next/og";
 import { AI_RESULT_LABEL, CASE_BUCKET } from "@/lib/contracts";
-import { ApiError, fail } from "@/lib/server/http";
+import { ApiError, fail, preflight, withCors } from "@/lib/server/http";
 import { clothingLines } from "@/lib/server/ai/prompt";
 import { CaseRow } from "@/lib/server/cases";
 import { supabaseAdmin } from "@/lib/server/supabase";
@@ -27,7 +27,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ shareId: strin
     ].filter(([, value]) => value);
     const clothing = clothingLines(flyer.appearance ?? { top: { status: "unknown" }, bottom: { status: "unknown" }, hat: { status: "unknown" }, shoes: { status: "unknown" }, items: [] });
 
-    return new ImageResponse(
+    return withCors(_req, new ImageResponse(
       h("div", { style: { width: "100%", height: "100%", display: "flex", background: "#fff8ec", color: "#231f20", fontFamily: "sans-serif", padding: 48, gap: 32 } },
         h("img", { src, style: { width: 520, height: 804, objectFit: "cover", borderRadius: 12 } }),
         h("div", { style: { display: "flex", flexDirection: "column", flex: 1, gap: 18 } },
@@ -39,8 +39,12 @@ export async function GET(_req: Request, ctx: { params: Promise<{ shareId: strin
         ),
       ),
       { width: 1200, height: 900, headers: { "Cache-Control": "private, no-store" } },
-    );
+    ));
   } catch (error) {
-    return fail(error);
+    return fail(error, _req);
   }
+}
+
+export function OPTIONS(req: Request) {
+  return preflight(req, "GET,OPTIONS");
 }

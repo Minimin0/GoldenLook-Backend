@@ -11,6 +11,7 @@ const base = {
   original_path: "u/c/original.jpg",
   generated_path: "u/c/generated.jpg",
   generation_status: "GENERATED" as const,
+  generation_started_at: null,
   regeneration_count: 0,
   name: "홍길동",
   age: 70,
@@ -37,6 +38,6 @@ describe("publish validation", () => {
   });
 
   it("rejects invalid contact", () => {
-    expect(() => requirePublishable({ ...base, contact: null })).toThrow();
+    expect(() => requirePublishable({ ...base, contact: "not a phone" })).toThrow();
   });
 });
