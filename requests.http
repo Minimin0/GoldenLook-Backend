@@ -1,0 +1,68 @@
+@baseUrl = http://localhost:3000
+@token = paste_supabase_access_token
+@caseId = paste_case_uuid
+@shareId = paste_share_id
+
+### Unauthorized create -> 401
+POST {{baseUrl}}/api/cases
+
+### Create case -> 201
+POST {{baseUrl}}/api/cases
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="photoMode"
+
+body_visible
+--boundary
+Content-Disposition: form-data; name="photo"; filename="sample.jpg"
+Content-Type: image/jpeg
+
+< ./sample.jpg
+--boundary--
+
+### Owner get -> 200
+GET {{baseUrl}}/api/cases/{{caseId}}
+Authorization: Bearer {{token}}
+
+### Invalid UUID -> 404
+GET {{baseUrl}}/api/cases/not-a-uuid
+Authorization: Bearer {{token}}
+
+### Patch metadata -> 200
+PATCH {{baseUrl}}/api/cases/{{caseId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "appearance": {
+    "top": { "status": "known", "color": "blue", "type": "반팔 티셔츠", "brand": null },
+    "bottom": { "status": "unknown" },
+    "hat": { "status": "none" },
+    "shoes": { "status": "unknown" },
+    "items": [{ "type": "지팡이", "color": "brown" }]
+  },
+  "name": "홍길동",
+  "age": 72,
+  "heightCm": 168,
+  "missingAt": "2026-09-12 10:00",
+  "place": "서울역",
+  "contact": "010-0000-0000",
+  "contactDisclosureConsent": true
+}
+
+### Generate -> 200, requires GEMINI_API_KEY
+POST {{baseUrl}}/api/cases/{{caseId}}/generate
+Authorization: Bearer {{token}}
+
+### Publish -> 200
+POST {{baseUrl}}/api/cases/{{caseId}}/publish
+Authorization: Bearer {{token}}
+
+### Public flyer PNG -> 200
+GET {{baseUrl}}/api/flyer/{{shareId}}
+
+### Delete -> 204
+DELETE {{baseUrl}}/api/cases/{{caseId}}
+Authorization: Bearer {{token}}
