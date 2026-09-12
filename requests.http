@@ -33,6 +33,10 @@ Content-Type: image/jpeg
 GET {{baseUrl}}/api/cases/{{caseId}}
 Authorization: Bearer {{token}}
 
+### My Flyers -> 200
+GET {{baseUrl}}/api/cases
+Authorization: Bearer {{token}}
+
 ### Invalid UUID -> 404
 GET {{baseUrl}}/api/cases/not-a-uuid
 Authorization: Bearer {{token}}
@@ -73,3 +77,7 @@ GET {{baseUrl}}/api/flyer/{{shareId}}
 ### Delete -> 204
 DELETE {{baseUrl}}/api/cases/{{caseId}}
 Authorization: Bearer {{token}}
+
+### Cleanup -> 200
+POST {{baseUrl}}/api/cron/cleanup
+Authorization: Bearer paste_cron_secret

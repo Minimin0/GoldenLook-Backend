@@ -29,7 +29,7 @@ Secrets are read server-side only. Build and unit tests do not require live secr
 
 ## Supabase
 
-Apply `supabase/migrations/20260913000000_backend_v4_core.sql`.
+Apply every file in `supabase/migrations/` in filename order. Existing environments must add, not rewrite, `20260913002000_generation_attempt_identity.sql`.
 
 It creates:
 
@@ -43,8 +43,8 @@ It creates:
 Storage paths:
 
 ```text
-{userId}/{caseId}/original.{jpg|png|webp}
-{userId}/{caseId}/generated.{jpg|png|webp}
+{userId}/{caseId}/original/{uuid}.{jpg|png|webp}
+{userId}/{caseId}/generated/{uuid}.{jpg|png|webp}
 ```
 
 Private API responses return 5-minute signed URLs, not raw storage paths.
@@ -57,6 +57,7 @@ Private routes use `Authorization: Bearer <Supabase access token>`.
 CORS allows only origins listed in `CORS_ALLOWED_ORIGINS`; preflight does not require auth.
 
 ```text
+GET    /api/cases                 owner My Flyers list, newest first, max 50
 POST   /api/cases                 multipart: photo, photoMode, optional data JSON
 GET    /api/cases/[id]
 PATCH  /api/cases/[id]            JSON or multipart with optional photo + data JSON
@@ -81,10 +82,14 @@ Error DTO:
 - colors: only IDs in `contracts/colors.json`
 - `known` garments require a color
 - `face_only` generation requires age, heightCm, gender, and bodyType before calling AI
+- `age`: 1-120; `heightCm`: 40-230
 - generated result label: `AI로 재현한 예상 모습`
 - regeneration: initial generation plus max 3 successful regenerations
 - publish requires generated image, missing-person basics, contact, and full-contact disclosure consent
 - published cases cannot be patched or regenerated; delete remains allowed
+- generation reservations consume the daily quota even if a later download/provider step fails
+
+Uploads are decoded, orientation-corrected, and re-encoded before storage, stripping EXIF metadata. Production CORS fails closed when `CORS_ALLOWED_ORIGINS` is unset; localhost is only the development default.
 
 Removed from runtime: `/parse`, old `/edit`, Gemini text parsing, Modal/SegFormer/LAB mandatory path, `112/182`, `manageToken`.
 
@@ -109,4 +114,4 @@ npm test
 npx tsc --noEmit
 ```
 
-Manual API examples live in `requests.http`.
+Manual API examples live in `requests.http`. The frontend contract and live release commands are in `docs/API_CONTRACT_v4.md` and `docs/LIVE_RELEASE_CHECKLIST.md`.

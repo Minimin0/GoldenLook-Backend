@@ -65,6 +65,7 @@ AI 담당자는 Backend의 AI 관련 구현을 owner처럼 자유롭게 수정�
 ## Backend baseline API
 
 - `POST /api/cases`
+- `GET /api/cases`
 - `GET/PATCH/DELETE /api/cases/[id]`
 - `POST /api/cases/[id]/generate`
 - `POST /api/cases/[id]/publish`
