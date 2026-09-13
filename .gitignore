@@ -41,6 +41,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# AI 품질 평가 결과 (생성 이미지)
+/.ai-eval/
+
 # python
 __pycache__/
 *.py[cod]

@@ -6,6 +6,9 @@ import { ApiError, assertUuid, fail, ok, preflight } from "@/lib/server/http";
 import { sanitizeImage } from "@/lib/server/images";
 import { supabaseAdmin } from "@/lib/server/supabase";
 
+// 이미지 생성은 1회 10~30초, 재시도 포함 최대 약 150초 (lib/server/ai/adapter.ts)
+export const maxDuration = 180;
+
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   let userId: string | null = null;
   let attemptId: string | null = null;
