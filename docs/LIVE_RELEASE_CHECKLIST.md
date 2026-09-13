@@ -19,4 +19,4 @@ Use only a disposable Supabase environment, synthetic images, dummy accounts, an
 9. Create an old synthetic case. Verify cleanup deletes storage before DB; force a storage failure, confirm DB retention, then confirm retry deletion.
 10. Run `npm ci`, `npm run lint`, `npm test`, `npx tsc --noEmit`, and `npm run build`; verify the latest PR HEAD CI.
 
-Do not merge until every live gate above passes and the production frontend origin is confirmed in `CORS_ALLOWED_ORIGINS`.
+Do not mark the release live, deploy production, or hand to real users until every live gate above passes and the production frontend origin is confirmed in `CORS_ALLOWED_ORIGINS`. Backend PR merge can proceed on static SQL validation, automated tests, and latest CI when no live-safe Supabase/Gemini environment is available.
