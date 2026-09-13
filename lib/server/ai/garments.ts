@@ -59,7 +59,7 @@ const COLOR_NAMES: Record<string, string> = {
 const BODY_TYPES = {
   slim: "a slim build: slender, with narrow shoulders and thin arms and legs",
   average: "an average build",
-  heavy: "a heavy build: clearly plump and overweight, with a round belly, a wide waist and hips, and thick arms and legs",
+  heavy: "a heavy build: clearly plump and overweight, with a large round belly that pushes out the top, a wide waist and hips, thick arms and legs, and a thick neck",
 } as const;
 
 // 대략적인 한국인 평균 키. 입력 키가 평균과 확실히 다를 때만 모델에 힌트를 준다.

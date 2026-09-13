@@ -72,6 +72,7 @@ function faceOnlyPrompt(input: PromptInput) {
     "Use the supplied face photo as identity reference and generate a natural standing full-body expected appearance of the same person.",
     "It will be used on a missing-person flyer, so the face must stay clearly recognizable as the person in the reference photo.",
     "Keep the face identical to the reference: facial features, face shape, skin tone, wrinkles, hairstyle, hair color, and glasses if worn. Do not beautify.",
+    "Keep the same facial expression as in the reference photo (for example, keep the smile if the person is smiling). The face must be sharp, well lit and clearly visible.",
     `The person is ${subjectPhrase(input.age, input.heightCm, input.bodyProfile)}. Body proportions and posture must look natural for this age and body type.`,
     // 1차 평가: 얼굴 사진이 말라 보이면 "heavy"를 무시하는 경우가 있었다.
     ...(input.bodyProfile?.bodyType && input.bodyProfile.bodyType !== "average"

@@ -15,7 +15,9 @@ if (existsSync(".env.local")) process.loadEnvFile(".env.local");
 const ROOT = path.resolve(".ai-eval");
 const SOURCES = path.join(ROOT, "sources");
 const CONCURRENCY = 3;
-const USD_PER_IMAGE = 0.067; // gemini-3.1-flash-image 1K 출력 1장 (2026-09 가격표)
+// gemini-3.1-flash-image 출력 1장 가격 (2026-09 가격표). face_only는 2K, 나머지와 원본은 1K.
+const USD_1K = 0.067;
+const USD_2K = 0.101;
 const MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-3.1-flash-image";
 
 const only = (process.env.AI_EVAL_ONLY ?? "").split(",").map((id) => id.trim()).filter(Boolean);
@@ -114,7 +116,9 @@ const escapeHtml = (value: string) => value.replace(/[&<>"]/g, (char) => ({ "&":
 function renderReport(rows: Row[]) {
   const succeeded = rows.filter((row) => row.ok);
   const avgSec = succeeded.length ? succeeded.reduce((sum, row) => sum + row.ms, 0) / succeeded.length / 1000 : 0;
-  const images = succeeded.reduce((sum, row) => sum + (row.attempts ?? 1), 0) + rows.filter((row) => row.sourceGenerated).length;
+  const sources = rows.filter((row) => row.sourceGenerated).length;
+  const images = succeeded.reduce((sum, row) => sum + (row.attempts ?? 1), 0) + sources;
+  const cost = succeeded.reduce((sum, row) => sum + (row.attempts ?? 1) * (row.case.photoMode === "face_only" ? USD_2K : USD_1K), 0) + sources * USD_1K;
   const cards = rows
     .map((row) => {
       const item = row.case;
@@ -134,7 +138,7 @@ section{background:#fff;border:1px solid #ddd;border-radius:12px;padding:16px;ma
 .pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}figure{margin:0}img{width:100%;border-radius:8px;background:#eee}
 figcaption{font-size:13px;color:#8a3b12;margin-top:4px}.fail{padding:40px;text-align:center;background:#fdecec;border-radius:8px;color:#a00}.meta{color:#666;font-size:14px}ul{margin:8px 0;padding-left:20px}</style>
 <h1>Golden Look AI 평가 — ${escapeHtml(MODEL)}</h1>
-<p>성공 ${succeeded.length}/${rows.length} · 평균 ${avgSec.toFixed(1)}초 · 이번 실행 예상 비용 약 $${(images * USD_PER_IMAGE).toFixed(2)} (${images}장)</p>
+<p>성공 ${succeeded.length}/${rows.length} · 평균 ${avgSec.toFixed(1)}초 · 이번 실행 예상 비용 약 $${cost.toFixed(2)} (${images}장)</p>
 <p>평가 기준: 얼굴 유사성 · 배경 유지 · 입력 반영(색/종류) · 실사성 · 모르는 항목을 지어내지 않았는지</p>
 ${cards}</html>`;
 }

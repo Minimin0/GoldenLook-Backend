@@ -52,6 +52,7 @@ describe("GeminiImageAdapter", () => {
     });
     await new GeminiImageAdapter({ generateContent }).generate(await input("face_only", 500, 500));
     expect(generateContent.mock.calls[0][0].config?.imageConfig?.aspectRatio).toBe("3:4");
+    expect(generateContent.mock.calls[0][0].config?.imageConfig?.imageSize).toBe("2K");
   });
 
   it("retries once on a temporary provider error", async () => {

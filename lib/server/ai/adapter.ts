@@ -13,6 +13,9 @@ const RETRY_DELAY_MS = 1_500;
 const OUTPUT_MAX_SIDE = 1536;
 const OUTPUT_JPEG_QUALITY = 90;
 const FACE_ONLY_ASPECT_RATIO = "3:4";
+// 전신 사진에서 얼굴은 작게 나오므로 face_only만 2K로 만들어 얼굴 픽셀을 늘린다 (1K $0.067 → 2K $0.101)
+const FACE_ONLY_IMAGE_SIZE = "2K";
+const BODY_VISIBLE_IMAGE_SIZE = "1K";
 const ASPECT_RATIOS = ["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9"];
 const SAFETY_FINISH_REASONS = new Set(["SAFETY", "PROHIBITED_CONTENT", "SPII", "BLOCKLIST", "IMAGE_SAFETY", "IMAGE_PROHIBITED_CONTENT"]);
 
@@ -43,7 +46,13 @@ export class GeminiImageAdapter implements ImageGenerationAdapter {
           ],
         },
       ],
-      config: { responseModalities: [Modality.IMAGE], imageConfig: { imageSize: "1K", aspectRatio: aspectRatio ?? undefined } },
+      config: {
+        responseModalities: [Modality.IMAGE],
+        imageConfig: {
+          imageSize: input.photoMode === "face_only" ? FACE_ONLY_IMAGE_SIZE : BODY_VISIBLE_IMAGE_SIZE,
+          aspectRatio: aspectRatio ?? undefined,
+        },
+      },
     };
 
     const maxAttempts = this.options.maxAttempts ?? MAX_ATTEMPTS;
