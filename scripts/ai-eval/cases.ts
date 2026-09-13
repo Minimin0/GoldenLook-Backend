@@ -154,3 +154,95 @@ export const EVAL_CASES: EvalCase[] = [
     heightCm: 157,
   },
 ];
+
+/** 실제 보호자가 올릴 법한 어려운 사진. 실행: AI_EVAL_SET=hard npm run ai:eval */
+export const HARD_CASES: EvalCase[] = [
+  {
+    id: "h1",
+    title: "4명 가족사진 (실종자가 가운데)",
+    photoMode: "body_visible",
+    sourcePrompt:
+      "Full-body family photo of four Korean people standing side by side in a park: in the center an elderly grandfather in his late 70s wearing a brown jacket and beige trousers, next to him his daughter in her 40s, her husband, and their 8-year-old grandchild. Everyone looks at the camera.",
+    sourceAspect: "4:3",
+    appearance: { top: { status: "known", color: "red", type: "점퍼" }, bottom: { status: "known", color: "gray", type: "면바지" }, hat: unknown, shoes: unknown, items: [] },
+    bodyProfile: null,
+    age: null,
+    heightCm: null,
+  },
+  {
+    id: "h2",
+    title: "3명 가족사진 (실종자인 아이가 가장자리)",
+    photoMode: "body_visible",
+    sourcePrompt:
+      "Full-body family photo of three Korean people at a beach: a father in his 30s in the center, a mother on the left, and their 7-year-old son standing at the far right edge wearing a white T-shirt and blue shorts.",
+    sourceAspect: "4:3",
+    appearance: { top: { status: "known", color: "yellow", type: "후드티" }, bottom: { status: "known", color: "black", type: "트레이닝복" }, hat: unknown, shoes: unknown, items: [] },
+    bodyProfile: null,
+    age: null,
+    heightCm: null,
+  },
+  {
+    id: "h2c",
+    title: "3명 가족사진에서 아이 쪽만 잘라 올린 경우",
+    photoMode: "body_visible",
+    // h2 원본을 아이 중심으로 잘라 sources/h2c.jpg로 미리 만들어 둔다. 아래 문장은 그 파일이 없을 때만 쓰인다.
+    sourcePrompt: "Full-body photo of a 7-year-old Korean boy in a white T-shirt and blue shorts at a beach, with his father's arm on his shoulder at the left edge.",
+    sourceAspect: "9:16",
+    appearance: { top: { status: "known", color: "yellow", type: "후드티" }, bottom: { status: "known", color: "black", type: "트레이닝복" }, hat: unknown, shoes: unknown, items: [] },
+    bodyProfile: null,
+    age: null,
+    heightCm: null,
+  },
+  {
+    id: "h3",
+    title: "오래되고 빛바랜 옛날 사진",
+    photoMode: "body_visible",
+    sourcePrompt:
+      "An old faded 1990s film snapshot, low resolution, warm yellow color cast, slightly blurry, of a Korean woman in her 60s standing in front of a house, wearing a green cardigan and a black skirt.",
+    sourceAspect: "3:4",
+    appearance: { top: { status: "known", color: "navy", type: "패딩" }, bottom: { status: "known", color: "gray", type: "면바지" }, hat: unknown, shoes: unknown, items: [] },
+    bodyProfile: null,
+    age: null,
+    heightCm: null,
+  },
+  {
+    id: "h4",
+    title: "단체사진에서 오려낸 흐릿한 얼굴",
+    photoMode: "face_only",
+    sourcePrompt:
+      "A low-resolution, blurry, grainy close crop of one face taken from a distant group photo: a Korean man in his 70s with short gray hair, slightly out of focus, JPEG compression artifacts.",
+    sourceAspect: "3:4",
+    appearance: {
+      top: { status: "known", color: "beige", type: "점퍼" },
+      bottom: { status: "known", color: "brown", type: "면바지" },
+      hat: unknown,
+      shoes: { status: "known", color: "black", type: "운동화" },
+      items: [],
+    },
+    bodyProfile: { gender: "male", bodyType: "average" },
+    age: 74,
+    heightCm: 168,
+  },
+  {
+    id: "h5",
+    title: "선글라스·모자로 얼굴 일부 가림",
+    photoMode: "face_only",
+    sourcePrompt: "Head-and-shoulders outdoor photo of a Korean woman in her late 60s wearing dark sunglasses and a wide-brimmed sun hat, smiling.",
+    sourceAspect: "3:4",
+    appearance: { top: { status: "known", color: "white", type: "셔츠" }, bottom: { status: "known", color: "beige", type: "면바지" }, hat: unknown, shoes: unknown, items: [] },
+    bodyProfile: { gender: "female", bodyType: "average" },
+    age: 68,
+    heightCm: 155,
+  },
+  {
+    id: "h6",
+    title: "옆모습 사진",
+    photoMode: "face_only",
+    sourcePrompt: "Side-profile photo of a Korean man in his 40s looking to the left, head and shoulders, outdoors in a city street.",
+    sourceAspect: "3:4",
+    appearance: { top: { status: "known", color: "black", type: "코트" }, bottom: { status: "known", color: "charcoal", type: "정장바지" }, hat: unknown, shoes: unknown, items: [] },
+    bodyProfile: { gender: "male", bodyType: "slim" },
+    age: 44,
+    heightCm: 176,
+  },
+];

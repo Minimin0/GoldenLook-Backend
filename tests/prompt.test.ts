@@ -20,6 +20,7 @@ describe("image prompt", () => {
     expect(prompt).toContain("Edit the supplied original photo");
     expect(prompt).toContain("Preserve the background");
     expect(prompt).toContain("Preserve the person's face and identity");
+    expect(prompt).toContain("apply the changes to only one person");
     expect(prompt).toContain("photorealistic");
     expect(prompt).toContain("No cartoon");
   });
@@ -52,6 +53,12 @@ describe("image prompt", () => {
   it("keeps brand text small and only when the user gave one", () => {
     expect(bodyVisible({ ...appearance, top: { status: "known", color: "red", type: "패딩", brand: "FILA" } })).toContain('Brand "FILA": at most one small, simple logo');
     expect(bodyVisible()).not.toContain("Brand");
+  });
+
+  it("never lets the model uncover a face hidden by sunglasses or a mask", () => {
+    for (const prompt of [bodyVisible(), faceOnly()]) {
+      expect(prompt).toContain("Never remove sunglasses or a face mask");
+    }
   });
 
   it("keeps carried items and flyer PII out of the image prompt", () => {

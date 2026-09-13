@@ -21,6 +21,8 @@ const COMMON_RULES = [
   "Do not add logos, brand marks, printed text, graphics or patterns unless they are listed above.",
   "Do not add bags, canes, jewelry, masks or other accessories that are not listed above.",
   "Do not write any text, captions, labels, watermarks, names, phone numbers or place names in the image.",
+  // 팀 결정(2026-09-14): 가려진 얼굴을 AI가 지어내면 오인 위험이 크다. 선글라스·마스크는 무조건 유지.
+  "Never remove sunglasses or a face mask shown in the photo, and never invent facial features they hide, such as the eyes.",
 ];
 
 // 소지품(items)은 전단 글자 전용이라 이미지 프롬프트에 넣지 않는다 (appearance contract).
@@ -43,6 +45,8 @@ function bodyVisiblePrompt(appearance: Appearance) {
   return [
     "Edit the supplied original photo. It will be used on a missing-person flyer, so the person must stay clearly recognizable.",
     "Change only the clothing described below. Everything else must stay the same as in the original photo.",
+    // 어려운 사진 평가(h2): 여러 명이 나오면 AI가 여러 사람을 바꾸거나 엉뚱한 사람을 고를 수 있다.
+    "If the photo shows several people, apply the changes to only one person: the main subject, who is the most central and prominent person. Keep everyone else exactly as they are.",
     "Preserve the person's face and identity exactly: facial features, face shape, skin tone, wrinkles, hairstyle, hair color, expression, and glasses if worn.",
     "Preserve the background, lighting, camera angle, framing, pose and body shape as much as possible.",
     "",

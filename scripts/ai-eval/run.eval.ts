@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { AI_RESULT_LABEL, colorName } from "@/lib/contracts";
 import { GeminiImageAdapter } from "@/lib/server/ai/adapter";
 import { ImageGenerationError } from "@/lib/server/ai/types";
-import { EVAL_CASES, FICTIONAL_SOURCE_SUFFIX, type EvalCase } from "./cases";
+import { EVAL_CASES, FICTIONAL_SOURCE_SUFFIX, HARD_CASES, type EvalCase } from "./cases";
 
 // 실행: npm run ai:eval  (일부만: AI_EVAL_ONLY=b1,f2 npm run ai:eval)
 // 결과: .ai-eval/runs/<시각>/index.html  — 가상 인물만 사용, 커밋하지 않는다.
@@ -21,7 +21,11 @@ const USD_2K = 0.101;
 const MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-3.1-flash-image";
 
 const only = (process.env.AI_EVAL_ONLY ?? "").split(",").map((id) => id.trim()).filter(Boolean);
-const cases = only.length ? EVAL_CASES.filter((item) => only.includes(item.id)) : EVAL_CASES;
+// AI_EVAL_SET: basic(기본 10건) | hard(어려운 사진) | all
+const ALL_CASES = [...EVAL_CASES, ...HARD_CASES];
+const set = process.env.AI_EVAL_SET ?? "basic";
+const pool = set === "hard" ? HARD_CASES : set === "all" ? ALL_CASES : EVAL_CASES;
+const cases = only.length ? ALL_CASES.filter((item) => only.includes(item.id)) : pool;
 
 type Row = { case: EvalCase; ok: boolean; ms: number; attempts?: number; aspectRatio?: string | null; error?: string; sourceGenerated: boolean };
 
