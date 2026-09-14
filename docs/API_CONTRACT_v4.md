@@ -19,7 +19,8 @@
 | DELETE | `/api/cases/{id}` | owner | `204` |
 | POST | `/api/cases/{id}/generate` | owner | `200 GenerationResult` |
 | POST | `/api/cases/{id}/publish` | owner | `200 { shareId, flyerUrl }` |
-| GET | `/api/flyer/{shareId}` | public | `200 image/png` |
+| GET | `/api/flyer/{shareId}` | public | `200 image/png`, 1080x1350 |
+| GET | `/api/flyer/{shareId}/meta` | public | `200 { contact, name, missingAt, place }` |
 | GET/POST | `/api/cron/cleanup` | cron secret | `200 { deleted, failed }` |
 
 All browser endpoints answer unauthenticated `OPTIONS`. Unknown or non-owned private case IDs return `404`.
@@ -47,6 +48,8 @@ The first successful generation does not increase `regenerationCount`; three lat
 ## Publish And Public Data
 
 Publish requires a generated image/status, name, age, missing time, place, valid phone number, and `contactDisclosureConsent=true`. It is atomic and idempotent. Public output contains the full consented contact number and no case UUID, user ID, storage path, attempt ID, manage token, 112/182 action, or internal report flow.
+
+The public flyer PNG is a 1080x1350 image. Its missing time is formatted as KST Korean text, for example `2026년 9월 13일 오후 3시 30분`. The public meta endpoint is published-only and returns only flyer-visible fields: `contact` plus nullable `name`, formatted `missingAt`, and `place`. It uses the same `shareId` validation and `no-store` cache policy as the PNG.
 
 ## Error Codes
 
