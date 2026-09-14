@@ -74,6 +74,9 @@ Authorization: Bearer {{token}}
 ### Public flyer PNG -> 200
 GET {{baseUrl}}/api/flyer/{{shareId}}
 
+### Public flyer meta -> 200
+GET {{baseUrl}}/api/flyer/{{shareId}}/meta
+
 ### Delete -> 204
 DELETE {{baseUrl}}/api/cases/{{caseId}}
 Authorization: Bearer {{token}}
