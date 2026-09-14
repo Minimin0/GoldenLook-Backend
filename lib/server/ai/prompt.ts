@@ -1,4 +1,4 @@
-import { Appearance, colorName } from "@/lib/contracts";
+import { Appearance } from "@/lib/contracts";
 import { colorPhrase, garmentTypePhrase, subjectPhrase } from "@/lib/server/ai/garments";
 import { GenerateImageInput } from "@/lib/server/ai/types";
 
@@ -105,15 +105,4 @@ function recolorLine(key: GarmentKey, part: KnownGarment) {
 
 function brandNote(part: KnownGarment) {
   return part.brand ? ` Brand "${part.brand}": at most one small, simple logo, no other text.` : "";
-}
-
-/** 전단 글자용 착의 요약. flyer route가 쓰고 있어 형식을 그대로 유지한다. */
-export function clothingLines(appearance: Appearance) {
-  return (["top", "bottom", "hat", "shoes"] as const).flatMap((key) => {
-    const part = appearance[key];
-    if (part.status === "none") return [`${key}: confirmed none.`];
-    if (part.status === "unknown") return [];
-    const bits = [part.color && colorName(part.color), part.type, part.brand].filter(Boolean);
-    return bits.length ? [`${key}: ${bits.join(", ")}.`] : [];
-  }).concat(appearance.items.map((item) => `item: ${[item.color && colorName(item.color), item.type].filter(Boolean).join(", ")}.`));
 }
